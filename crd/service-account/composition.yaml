@@ -65,6 +65,9 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: spec.hmacKey
           toFieldPath: spec.forProvider.varmap.hmac_key
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.bindings
+          toFieldPath: spec.forProvider.varmap.bindings
 
         # default connection secret name; overridable via spec.writeSecretTo
         - type: FromCompositeFieldPath

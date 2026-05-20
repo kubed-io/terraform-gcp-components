@@ -76,6 +76,9 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: spec.attributeCondition
           toFieldPath: spec.forProvider.varmap.attribute_condition
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.members
+          toFieldPath: spec.forProvider.varmap.members
 
         # connection secret naming
         - type: FromCompositeFieldPath

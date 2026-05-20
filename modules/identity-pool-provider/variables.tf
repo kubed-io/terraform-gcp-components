@@ -48,6 +48,15 @@ variable "attribute_mapping" {
   }
 }
 
+variable "members" {
+  type = list(object({
+    serviceAccountName = string
+    condition          = string
+  }))
+  description = "Service accounts to grant workloadIdentityUser through this provider. serviceAccountName is the GCP SA account ID, condition is the principalSet suffix (e.g. attribute.repository_owner_id/102392839)."
+  default = []
+}
+
 variable "attribute_condition" {
   type        = string
   description = "CEL expression that further restricts which tokens are accepted (e.g. assertion.repository_owner == 'kubed-io')."

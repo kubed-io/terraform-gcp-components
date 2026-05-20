@@ -40,6 +40,18 @@ spec:
                   namespace:
                     description: Namespace of the secret
                     type: string
+              bindings:
+                description: SA-level IAM bindings granting other principals access to this service account
+                type: object
+                additionalProperties:
+                  type: object
+                  properties:
+                    role:
+                      description: IAM role to grant (e.g. roles/iam.workloadIdentityUser)
+                      type: string
+                    member:
+                      description: Principal to bind (e.g. principalSet://iam.googleapis.com/...)
+                      type: string
               hmacKey:
                 description: Whether to create an HMAC key for this service account (for GCS access)
                 type: boolean

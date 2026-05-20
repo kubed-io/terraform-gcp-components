@@ -19,6 +19,15 @@ variable "roles" {
   default     = []
 }
 
+variable "bindings" {
+  type = map(object({
+    role   = string
+    member = string
+  }))
+  description = "SA-level IAM bindings granting other principals access to this service account (e.g. workload identity impersonation)."
+  default = {}
+}
+
 variable "hmac_key" {
   type        = bool
   description = "Whether to create an HMAC key for this service account (for GCS interop access)."

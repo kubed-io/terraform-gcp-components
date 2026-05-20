@@ -23,6 +23,13 @@ resource "google_project_iam_member" "this" {
   member   = "serviceAccount:${google_service_account.this.email}"
 }
 
+resource "google_service_account_iam_member" "bindings" {
+  for_each           = var.bindings
+  service_account_id = google_service_account.this.name
+  role               = each.value.role
+  member             = each.value.member
+}
+
 resource "google_storage_hmac_key" "this" {
   count                 = var.hmac_key ? 1 : 0
   service_account_email = google_service_account.this.email

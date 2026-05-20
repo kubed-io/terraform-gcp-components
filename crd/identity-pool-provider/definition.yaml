@@ -48,6 +48,18 @@ spec:
                 type: object
                 additionalProperties:
                   type: string
+              members:
+                description: Service accounts to grant workloadIdentityUser through this provider.
+                type: array
+                items:
+                  type: object
+                  properties:
+                    serviceAccountName:
+                      description: GCP service account ID (e.g. github)
+                      type: string
+                    condition:
+                      description: principalSet condition suffix (e.g. attribute.repository_owner_id/102392839)
+                      type: string
               attributeCondition:
                 description: CEL expression restricting accepted tokens (e.g. assertion.repository_owner == 'kubed-io').
                 type: string
