@@ -1,0 +1,75 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: identitypools.gcp.kubed.io
+spec:
+  writeConnectionSecretsToNamespace: crossplane
+  compositeTypeRef:
+    apiVersion: gcp.kubed.io/v1alpha1
+    kind: IdentityPool
+  mode: Pipeline
+  pipeline:
+  - step: module
+    functionRef:
+      name: patch-and-transform
+    input:
+      apiVersion: pt.fn.crossplane.io/v1beta1
+      kind: Resources
+      resources:
+      - name: workspace
+        base:
+          apiVersion: opentofu.upbound.io/v1beta1
+          kind: Workspace
+          metadata:
+            name: identitypools.gcp
+            annotations:
+              kubernetes.io/description: |
+                OpenTofu workspace that provisions a GCP Workload Identity Pool.
+          spec:
+            providerConfigRef:
+              name: gcp
+            forProvider:
+              source: Remote
+              module: github.com/kubed-io/terraform-gcp-components//modules/identity-pool?ref=main
+              # filled out by the patch-and-transform function below
+              varmap: {}
+            # overwritten by the patch transformer
+            writeConnectionSecretToRef:
+              namespace: crossplane
+              name: gcp-id-pool
+        patches:
+
+        # workspace name
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: metadata.name
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: "%s.identitypools.gcp"
+
+        # varmap inputs
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: spec.forProvider.varmap.name
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.display_name
+          toFieldPath: spec.forProvider.varmap.display_name
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.description
+          toFieldPath: spec.forProvider.varmap.description
+
+        # connection secret naming
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: spec.writeConnectionSecretToRef.name
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: "%s-gcp-id-pool"
+
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.outputs
+          toFieldPath: status.details

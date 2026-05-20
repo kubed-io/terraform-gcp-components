@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: gcp-identity-pool-crd
+namespace: crossplane
+labels:
+- pairs:
+    app.kubernetes.io/part-of: crossplane
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/name: gcp-identity-pool
+resources:
+- definition.yaml
+- composition.yaml

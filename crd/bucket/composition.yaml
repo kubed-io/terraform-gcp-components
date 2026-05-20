@@ -1,0 +1,88 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: buckets.gcp.kubed.io
+spec:
+  writeConnectionSecretsToNamespace: crossplane
+  compositeTypeRef:
+    apiVersion: gcp.kubed.io/v1alpha1
+    kind: Bucket
+  mode: Pipeline
+  pipeline:
+  - step: module
+    functionRef:
+      name: patch-and-transform
+    input:
+      apiVersion: pt.fn.crossplane.io/v1beta1
+      kind: Resources
+      resources:
+      - name: workspace
+        base:
+          apiVersion: opentofu.upbound.io/v1beta1
+          kind: Workspace
+          metadata:
+            name: buckets.gcp
+            annotations:
+              kubernetes.io/description: |
+                OpenTofu workspace that provisions a GCS bucket.
+          spec:
+            providerConfigRef:
+              name: gcp
+            forProvider:
+              source: Remote
+              module: github.com/kubed-io/terraform-gcp-components//modules/bucket?ref=main
+              # filled out by the patch-and-transform function in the composition
+              varmap: {}
+            writeConnectionSecretToRef:
+              namespace: crossplane
+              name: gcp-bucket
+        patches:
+
+        # workspace name
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: metadata.name
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: "%s.buckets.gcp"
+
+        # varmap inputs
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: spec.forProvider.varmap.name
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.location
+          toFieldPath: spec.forProvider.varmap.location
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.storage_class
+          toFieldPath: spec.forProvider.varmap.storage_class
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.versioning
+          toFieldPath: spec.forProvider.varmap.versioning
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.uniform_bucket_level_access
+          toFieldPath: spec.forProvider.varmap.uniform_bucket_level_access
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.public_access_prevention
+          toFieldPath: spec.forProvider.varmap.public_access_prevention
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.force_destroy
+          toFieldPath: spec.forProvider.varmap.force_destroy
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.lifecycle_rules
+          toFieldPath: spec.forProvider.varmap.lifecycle_rules
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.iam
+          toFieldPath: spec.forProvider.varmap.iam
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.cors
+          toFieldPath: spec.forProvider.varmap.cors
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.labels
+          toFieldPath: spec.forProvider.varmap.labels
+
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.outputs
+          toFieldPath: status.details

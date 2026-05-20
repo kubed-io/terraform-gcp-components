@@ -1,0 +1,92 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: identitypoolproviders.gcp.kubed.io
+spec:
+  writeConnectionSecretsToNamespace: crossplane
+  compositeTypeRef:
+    apiVersion: gcp.kubed.io/v1alpha1
+    kind: IdentityPoolProvider
+  mode: Pipeline
+  pipeline:
+  - step: module
+    functionRef:
+      name: patch-and-transform
+    input:
+      apiVersion: pt.fn.crossplane.io/v1beta1
+      kind: Resources
+      resources:
+      - name: workspace
+        base:
+          apiVersion: opentofu.upbound.io/v1beta1
+          kind: Workspace
+          metadata:
+            name: identitypoolproviders.gcp
+            annotations:
+              kubernetes.io/description: |
+                OpenTofu workspace that provisions a GCP Workload Identity Pool Provider (OIDC).
+          spec:
+            providerConfigRef:
+              name: gcp
+            forProvider:
+              source: Remote
+              module: github.com/kubed-io/terraform-gcp-components//modules/identity-pool-provider?ref=main
+              # filled out by the patch-and-transform function below
+              varmap: {}
+            writeConnectionSecretToRef:
+              namespace: crossplane
+              name: gcp-id-pool-provider
+        patches:
+
+        # workspace name — scoped by pool to allow same provider name under different pools
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: metadata.name
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: "%s.identitypoolproviders.gcp"
+
+        # varmap inputs
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: spec.forProvider.varmap.name
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.poolId
+          toFieldPath: spec.forProvider.varmap.pool_id
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.display_name
+          toFieldPath: spec.forProvider.varmap.display_name
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.description
+          toFieldPath: spec.forProvider.varmap.description
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.disabled
+          toFieldPath: spec.forProvider.varmap.disabled
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.issuerUri
+          toFieldPath: spec.forProvider.varmap.issuer_uri
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.allowedAudiences
+          toFieldPath: spec.forProvider.varmap.allowed_audiences
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.attributeMapping
+          toFieldPath: spec.forProvider.varmap.attribute_mapping
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.attributeCondition
+          toFieldPath: spec.forProvider.varmap.attribute_condition
+
+        # connection secret naming
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: spec.writeConnectionSecretToRef.name
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: "%s-gcp-id-pool-provider"
+
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.outputs
+          toFieldPath: status.details

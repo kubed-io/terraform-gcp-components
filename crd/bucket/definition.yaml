@@ -1,0 +1,135 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: buckets.gcp.kubed.io
+spec:
+  scope: Cluster
+  group: gcp.kubed.io
+  names:
+    kind: Bucket
+    plural: buckets
+  versions:
+  - name: v1alpha1
+    served: true
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              location:
+                description: The GCS location for the bucket (e.g., US, EU, us-central1)
+                type: string
+                default: US
+              storage_class:
+                description: The Storage Class of the bucket (STANDARD, NEARLINE, COLDLINE, ARCHIVE)
+                type: string
+                default: STANDARD
+                enum:
+                - STANDARD
+                - NEARLINE
+                - COLDLINE
+                - ARCHIVE
+              versioning:
+                description: Enable versioning for the bucket
+                type: boolean
+                default: false
+              uniform_bucket_level_access:
+                description: Enable uniform bucket-level access
+                type: boolean
+                default: true
+              public_access_prevention:
+                description: Public access prevention setting (inherited, enforced)
+                type: string
+                default: enforced
+                enum:
+                - inherited
+                - enforced
+              force_destroy:
+                description: Allow bucket to be destroyed even if it contains objects
+                type: boolean
+                default: false
+              lifecycle_rules:
+                description: Lifecycle rules for the bucket
+                type: array
+                items:
+                  type: object
+                  properties:
+                    action:
+                      type: object
+                      properties:
+                        type:
+                          description: Action type (Delete, SetStorageClass)
+                          type: string
+                        storage_class:
+                          description: Target storage class for SetStorageClass action
+                          type: string
+                    condition:
+                      type: object
+                      properties:
+                        age:
+                          description: Age in days
+                          type: integer
+                        created_before:
+                          description: Creation date condition (YYYY-MM-DD)
+                          type: string
+                        with_state:
+                          description: Object state (LIVE, ARCHIVED, ANY)
+                          type: string
+                        matches_storage_class:
+                          description: Storage classes to match
+                          type: array
+                          items:
+                            type: string
+                        num_newer_versions:
+                          description: Number of newer versions
+                          type: integer
+              iam:
+                description: IAM bindings for the bucket
+                type: array
+                items:
+                  type: object
+                  properties:
+                    role:
+                      description: IAM role (e.g., roles/storage.objectViewer)
+                      type: string
+                    members:
+                      description: Members to bind to the role
+                      type: array
+                      items:
+                        type: string
+              cors:
+                description: CORS configuration for the bucket
+                type: array
+                items:
+                  type: object
+                  properties:
+                    origins:
+                      type: array
+                      items:
+                        type: string
+                    methods:
+                      type: array
+                      items:
+                        type: string
+                    response_headers:
+                      type: array
+                      items:
+                        type: string
+                    max_age_seconds:
+                      type: integer
+              labels:
+                description: Labels to apply to the bucket
+                type: object
+                additionalProperties:
+                  type: string
+          status:
+            description: A Status represents the observed state
+            type: object
+            properties:
+              details:
+                description: Freeform field containing status information
+                type: object
+                x-kubernetes-preserve-unknown-fields: true

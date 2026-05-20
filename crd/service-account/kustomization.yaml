@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: gcp-service-account-crd
+namespace: crossplane
+labels:
+- pairs:
+    app.kubernetes.io/part-of: crossplane
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/name: gcp-service-account
+resources:
+- definition.yaml
+- composition.yaml

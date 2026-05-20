@@ -1,0 +1,35 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: identitypools.gcp.kubed.io
+spec:
+  scope: Cluster
+  group: gcp.kubed.io
+  names:
+    kind: IdentityPool
+    plural: identitypools
+  versions:
+  - name: v1alpha1
+    served: true
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              display_name:
+                description: Human-friendly name shown in the GCP console.
+                type: string
+              description:
+                description: Free-form description of the pool.
+                type: string
+          status:
+            description: A Status represents the observed state
+            type: object
+            properties:
+              details:
+                description: Outputs from the OpenTofu workspace (pool_id, pool_name, project_id, project_number).
+                type: object
+                x-kubernetes-preserve-unknown-fields: true

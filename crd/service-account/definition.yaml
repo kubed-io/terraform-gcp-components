@@ -1,0 +1,54 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: serviceaccounts.gcp.kubed.io
+spec:
+  scope: Cluster
+  group: gcp.kubed.io
+  names:
+    kind: ServiceAccount
+    plural: serviceaccounts
+  versions:
+  - name: v1alpha1
+    served: true
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              display_name:
+                description: DisplayName is the name of the entry
+                type: string
+              description:
+                description: Description is a description of the entry
+                type: string
+              roles:
+                description: Roles is a list of IAM roles to assign to the service account
+                type: array
+                items:
+                  type: string
+              writeSecretTo:
+                description: WriteToSecret is the name of the secret to write the service account credentials to
+                type: object
+                properties:
+                  name:
+                    description: Name of the secret
+                    type: string
+                  namespace:
+                    description: Namespace of the secret
+                    type: string
+              hmacKey:
+                description: Whether to create an HMAC key for this service account (for GCS access)
+                type: boolean
+                default: false
+          status:
+            description: A Status represents the observed state
+            type: object
+            properties:
+              details:
+                description: Freeform field containing status information
+                type: object
+                x-kubernetes-preserve-unknown-fields: true

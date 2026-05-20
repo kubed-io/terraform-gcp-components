@@ -1,0 +1,86 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: serviceaccounts.gcp.kubed.io
+spec:
+  writeConnectionSecretsToNamespace: crossplane
+  compositeTypeRef:
+    apiVersion: gcp.kubed.io/v1alpha1
+    kind: ServiceAccount
+  mode: Pipeline
+  pipeline:
+  - step: module
+    functionRef:
+      name: patch-and-transform
+    input:
+      apiVersion: pt.fn.crossplane.io/v1beta1
+      kind: Resources
+      resources:
+      - name: workspace
+        base:
+          apiVersion: opentofu.upbound.io/v1beta1
+          kind: Workspace
+          metadata:
+            name: serviceaccounts.gcp
+            annotations:
+              kubernetes.io/description: |
+                OpenTofu workspace that provisions a GCP service account, key, and optional HMAC key.
+          spec:
+            providerConfigRef:
+              name: gcp
+            forProvider:
+              source: Remote
+              module: github.com/kubed-io/terraform-gcp-components//modules/service-account?ref=main
+              # filled out by the patch-and-transform function in the composition
+              varmap: {}
+            # these get overwritten by the patch transformer
+            writeConnectionSecretToRef:
+              namespace: crossplane
+              name: gcp-creds
+        patches:
+
+        # workspace name
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: metadata.name
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: "%s.serviceaccounts.gcp"
+
+        # varmap inputs
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: spec.forProvider.varmap.name
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.display_name
+          toFieldPath: spec.forProvider.varmap.display_name
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.description
+          toFieldPath: spec.forProvider.varmap.description
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.roles
+          toFieldPath: spec.forProvider.varmap.roles
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.hmacKey
+          toFieldPath: spec.forProvider.varmap.hmac_key
+
+        # default connection secret name; overridable via spec.writeSecretTo
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: spec.writeConnectionSecretToRef.name
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: "%s-gcp-creds"
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.writeSecretTo
+          toFieldPath: spec.writeConnectionSecretToRef
+          policy:
+            toFieldPath: ForceMergeObjects
+
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.outputs
+          toFieldPath: status.details

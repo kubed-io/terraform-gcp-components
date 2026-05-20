@@ -1,0 +1,61 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: identitypoolproviders.gcp.kubed.io
+spec:
+  scope: Cluster
+  group: gcp.kubed.io
+  names:
+    kind: IdentityPoolProvider
+    plural: identitypoolproviders
+  versions:
+  - name: v1alpha1
+    served: true
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - poolId
+            properties:
+              poolId:
+                description: ID of the parent workload identity pool.
+                type: string
+              display_name:
+                description: Human-friendly name shown in the GCP console.
+                type: string
+              description:
+                description: Free-form description of the provider.
+                type: string
+              disabled:
+                description: Whether the provider is disabled.
+                type: boolean
+                default: false
+              issuerUri:
+                description: OIDC issuer URI. Defaults to GitHub Actions.
+                type: string
+                default: https://token.actions.githubusercontent.com
+              allowedAudiences:
+                description: Allowed OIDC token audiences. Empty list uses the default audience.
+                type: array
+                items:
+                  type: string
+              attributeMapping:
+                description: Mapping from external token claims to Google attributes. Must include google.subject.
+                type: object
+                additionalProperties:
+                  type: string
+              attributeCondition:
+                description: CEL expression restricting accepted tokens (e.g. assertion.repository_owner == 'kubed-io').
+                type: string
+          status:
+            description: A Status represents the observed state
+            type: object
+            properties:
+              details:
+                description: Outputs from the OpenTofu workspace (provider_id, provider_name, audience, project_id, project_number).
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
