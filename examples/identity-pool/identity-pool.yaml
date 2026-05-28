@@ -1,0 +1,7 @@
+apiVersion: gcp.kubed.io/v1alpha1
+kind: IdentityPool
+metadata:
+  name: example-pool
+spec:
+  display_name: Example Workload Identity Pool
+  description: Pool for external workloads to authenticate as GCP service accounts
