@@ -1,0 +1,275 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: dnszones.gcp.kubed.io
+spec:
+  scope: Cluster
+  group: gcp.kubed.io
+  names:
+    kind: DnsZone
+    plural: dnszones
+  versions:
+  - name: v1alpha1
+    served: true
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - dnsName
+            properties:
+
+              # --- individually patched (camelCase top-level) ---
+
+              dnsName:
+                description: DNS name of this zone, ending with a dot (e.g. example.com.)
+                type: string
+              description:
+                description: Free-text description of the zone
+                type: string
+              visibility:
+                description: Zone visibility — public zones are exposed to the Internet, private zones are visible only to VPC resources
+                type: string
+                default: public
+                enum:
+                - public
+                - private
+              forceDestroy:
+                description: Delete all records in the zone when destroying
+                type: boolean
+                default: false
+              deletionPolicy:
+                description: Controls whether Terraform can destroy the zone — DELETE, ABANDON, or PREVENT
+                type: string
+                default: DELETE
+                enum:
+                - DELETE
+                - ABANDON
+                - PREVENT
+
+              # --- passed as whole objects; internal keys must be snake_case to match TF ---
+
+              dnssecConfig:
+                description: DNSSEC configuration for the zone
+                type: object
+                properties:
+                  state:
+                    description: Whether DNSSEC is enabled — off, on, or transfer
+                    type: string
+                    default: "off"
+                    enum:
+                    - "off"
+                    - "on"
+                    - transfer
+                  non_existence:
+                    description: Denial-of-existence mechanism — nsec or nsec3 (only changeable when state is off)
+                    type: string
+                    enum:
+                    - nsec
+                    - nsec3
+                  kind:
+                    description: Identifies what kind of resource this is
+                    type: string
+                  default_key_specs:
+                    description: Parameters for generating initial DnsKeys. Must provide both keySigning and zoneSigning entries when set
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        algorithm:
+                          description: DNSSEC algorithm — ecdsap256sha256, ecdsap384sha384, rsasha1, rsasha256, rsasha512
+                          type: string
+                        key_length:
+                          description: Length of the key in bits
+                          type: integer
+                        key_type:
+                          description: keySigning or zoneSigning
+                          type: string
+                          enum:
+                          - keySigning
+                          - zoneSigning
+                        kind:
+                          description: Identifies what kind of resource this is
+                          type: string
+
+              privateVisibilityConfig:
+                description: VPC networks that can see this zone — required when visibility is private
+                type: object
+                properties:
+                  networks:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - network_url
+                      properties:
+                        network_url:
+                          description: Fully qualified URL or ID of the VPC network
+                          type: string
+
+              cloudLoggingConfig:
+                description: Cloud DNS query logging configuration
+                type: object
+                properties:
+                  enabled:
+                    description: Enable query logging for this zone
+                    type: boolean
+
+              iam:
+                description: IAM bindings for the zone — authoritative per role
+                type: array
+                items:
+                  type: object
+                  required:
+                  - role
+                  - members
+                  properties:
+                    role:
+                      description: IAM role to bind, e.g. roles/dns.admin
+                      type: string
+                    members:
+                      description: "Identities to grant the role — user:, serviceAccount:, group:, domain:"
+                      type: array
+                      items:
+                        type: string
+                    condition:
+                      description: IAM condition scoping this binding
+                      type: object
+                      required:
+                      - title
+                      - expression
+                      properties:
+                        title:
+                          description: Short label for the condition
+                          type: string
+                        expression:
+                          description: CEL expression for the condition
+                          type: string
+                        description:
+                          description: Optional longer description of the condition
+                          type: string
+
+              records:
+                description: DNS record sets managed within this zone
+                type: array
+                items:
+                  type: object
+                  required:
+                  - name
+                  - type
+                  properties:
+                    name:
+                      description: Relative record name (e.g. www, api) or @ for the zone apex
+                      type: string
+                    type:
+                      description: DNS record type — A, AAAA, CNAME, MX, TXT, NS, SRV, etc.
+                      type: string
+                    ttl:
+                      description: Time-to-live in seconds
+                      type: integer
+                      default: 300
+                    rrdatas:
+                      description: Record data strings — mutually exclusive with routing_policy
+                      type: array
+                      items:
+                        type: string
+                    deletion_policy:
+                      description: Controls whether Terraform can destroy this record set — DELETE, ABANDON, or PREVENT
+                      type: string
+                      default: DELETE
+                      enum:
+                      - DELETE
+                      - ABANDON
+                      - PREVENT
+                    routing_policy:
+                      description: Traffic routing policy — mutually exclusive with rrdatas
+                      type: object
+                      properties:
+                        wrr:
+                          description: Weighted round-robin routing targets
+                          type: array
+                          items:
+                            type: object
+                            required:
+                            - weight
+                            - rrdatas
+                            properties:
+                              weight:
+                                description: Fraction of traffic to route to this target (0.0–1.0)
+                                type: number
+                              rrdatas:
+                                description: Record data for this target
+                                type: array
+                                items:
+                                  type: string
+                        geo:
+                          description: Geolocation-based routing targets
+                          type: array
+                          items:
+                            type: object
+                            required:
+                            - location
+                            - rrdatas
+                            properties:
+                              location:
+                                description: GCP region or location name
+                                type: string
+                              rrdatas:
+                                description: Record data for this location
+                                type: array
+                                items:
+                                  type: string
+                        primary_backup:
+                          description: Primary/backup failover routing
+                          type: object
+                          required:
+                          - primary
+                          - backup_geo
+                          properties:
+                            trickle_ratio:
+                              description: Fraction of traffic to send to backup targets even when primary is healthy
+                              type: number
+                            primary:
+                              description: Primary targets to health check
+                              type: object
+                              properties:
+                                external_endpoints:
+                                  description: External IP endpoints to use as primary targets
+                                  type: array
+                                  items:
+                                    type: string
+                            backup_geo:
+                              description: Regional backup targets used when primary targets are unhealthy
+                              type: array
+                              items:
+                                type: object
+                                required:
+                                - location
+                                - rrdatas
+                                properties:
+                                  location:
+                                    description: GCP region or location name
+                                    type: string
+                                  rrdatas:
+                                    description: Record data for this backup location
+                                    type: array
+                                    items:
+                                      type: string
+
+              labels:
+                description: GCP labels to apply to the zone
+                type: object
+                additionalProperties:
+                  type: string
+
+          status:
+            description: A Status represents the observed state
+            type: object
+            properties:
+              details:
+                description: Outputs from the OpenTofu workspace
+                type: object
+                x-kubernetes-preserve-unknown-fields: true

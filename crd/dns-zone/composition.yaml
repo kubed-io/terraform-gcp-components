@@ -1,0 +1,93 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: dnszones.gcp.kubed.io
+spec:
+  writeConnectionSecretsToNamespace: crossplane
+  compositeTypeRef:
+    apiVersion: gcp.kubed.io/v1alpha1
+    kind: DnsZone
+  mode: Pipeline
+  pipeline:
+  - step: module
+    functionRef:
+      name: patch-and-transform
+    input:
+      apiVersion: pt.fn.crossplane.io/v1beta1
+      kind: Resources
+      resources:
+      - name: workspace
+        base:
+          apiVersion: opentofu.upbound.io/v1beta1
+          kind: Workspace
+          metadata:
+            name: dnszones.gcp
+            annotations:
+              kubernetes.io/description: |
+                OpenTofu workspace that provisions a GCP Cloud DNS managed zone with record sets and IAM bindings.
+          spec:
+            providerConfigRef:
+              name: gcp
+            forProvider:
+              source: Remote
+              module: github.com/kubed-io/terraform-gcp-components//modules/dns-zone?ref=main
+              # filled out by the patch-and-transform function in the composition
+              varmap: {}
+            writeConnectionSecretToRef:
+              namespace: crossplane
+              name: gcp-dns-zone
+        patches:
+
+        # workspace name
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: metadata.name
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: "%s.dnszones.gcp"
+
+        # scalars — individually patched, camelCase fromFieldPath → snake_case varmap key
+        - type: FromCompositeFieldPath
+          fromFieldPath: metadata.name
+          toFieldPath: spec.forProvider.varmap.name
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.dnsName
+          toFieldPath: spec.forProvider.varmap.dns_name
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.description
+          toFieldPath: spec.forProvider.varmap.description
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.visibility
+          toFieldPath: spec.forProvider.varmap.visibility
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.forceDestroy
+          toFieldPath: spec.forProvider.varmap.force_destroy
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.deletionPolicy
+          toFieldPath: spec.forProvider.varmap.deletion_policy
+
+        # objects/arrays — passed as a whole; internal keys are already snake_case in the definition
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.dnssecConfig
+          toFieldPath: spec.forProvider.varmap.dnssec_config
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.privateVisibilityConfig
+          toFieldPath: spec.forProvider.varmap.private_visibility_config
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.cloudLoggingConfig
+          toFieldPath: spec.forProvider.varmap.cloud_logging_config
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.iam
+          toFieldPath: spec.forProvider.varmap.iam
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.records
+          toFieldPath: spec.forProvider.varmap.records
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.labels
+          toFieldPath: spec.forProvider.varmap.labels
+
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.outputs
+          toFieldPath: status.details

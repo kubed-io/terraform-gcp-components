@@ -4,21 +4,25 @@ A collection of OpenTofu/Terraform modules and matching Crossplane composite res
 
 ## Modules
 
-### Service Account
+### [Service Account](modules/service-account/README.md)
 
-`kind: ServiceAccount` — creates a GCP service account, an exported key, optional project-level IAM role bindings, and an optional HMAC key for GCS interop.
+`kind: ServiceAccount` — creates a GCP service account, an exported JSON key, optional project-level IAM role bindings, SA-level IAM bindings for workload identity impersonation, and an optional HMAC key for GCS S3-compatible access.
 
-### Bucket
+### [Bucket](modules/bucket/README.md)
 
 `kind: Bucket` — creates a GCS bucket with versioning, lifecycle rules, uniform bucket-level access, IAM bindings, CORS, and labels.
 
-### Identity Pool
+### [Identity Pool](modules/identity-pool/README.md)
 
-`kind: IdentityPool` — creates a Workload Identity Pool. Pool ID is taken from `metadata.name`.
+`kind: IdentityPool` — creates a Workload Identity Pool. Pool ID is taken from `metadata.name`. Pair with one or more Identity Pool Providers to allow external workloads to authenticate as GCP service accounts without long-lived keys.
 
-### Identity Pool Provider
+### [Identity Pool Provider](modules/identity-pool-provider/README.md)
 
 `kind: IdentityPoolProvider` — creates an OIDC Workload Identity Pool Provider under an existing pool. Defaults shaped for GitHub Actions OIDC (issuer `https://token.actions.githubusercontent.com`, standard attribute mapping). Use `attributeCondition` to restrict which tokens the provider accepts (e.g. limit to a specific GitHub org or repo).
+
+### [DNS Zone](modules/dns-zone/README.md)
+
+`kind: DnsZone` — creates a Cloud DNS managed zone with DNS record sets and IAM bindings. Supports public and private zones, DNSSEC, geolocation and weighted routing policies, and Cloud DNS query logging.
 
 ## Usage
 
