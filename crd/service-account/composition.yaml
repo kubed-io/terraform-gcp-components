@@ -30,6 +30,8 @@ spec:
               name: gcp
             forProvider:
               source: Remote
+              # the module is pulled once per ?ref, not on every reconcile
+              remotePullPolicy: IfNotPresent
               module: github.com/kubed-io/terraform-gcp-components//modules/service-account?ref=main
               # filled out by the patch-and-transform function in the composition
               varmap: {}

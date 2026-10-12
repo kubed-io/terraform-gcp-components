@@ -54,7 +54,7 @@ variable "members" {
     condition          = string
   }))
   description = "Service accounts to grant workloadIdentityUser through this provider. serviceAccountName is the GCP SA account ID, condition is the principalSet suffix (e.g. attribute.repository_owner_id/102392839)."
-  default = []
+  default     = []
 }
 
 variable "attribute_condition" {

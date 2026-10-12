@@ -26,7 +26,10 @@ A collection of OpenTofu/Terraform modules and matching Crossplane composite res
 
 ## Usage
 
-The CRDs in `crd/` are consumed by the parent cluster repo. Each composition references its module via a `source: Remote` workspace pointing at `github.com/kubed-io/terraform-gcp-components//modules/<name>?ref=main`.
+The CRDs in `crd/` are consumed by the parent cluster repo. Each composition references its module via a `source: Remote` workspace pointing at `github.com/kubed-io/terraform-gcp-components//modules/<name>?ref=vX.Y.Z`.
+
+Releases are cut by the Publish workflow, which pins every Composition's module to the
+release's own tag, so deploy `crd/` at a tag (`?ref=vX.Y.Z`), never at `main`.
 
 ## References
 
