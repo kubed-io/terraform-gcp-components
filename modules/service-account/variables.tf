@@ -25,7 +25,7 @@ variable "bindings" {
     member = string
   }))
   description = "SA-level IAM bindings granting other principals access to this service account (e.g. workload identity impersonation)."
-  default = {}
+  default     = {}
 }
 
 variable "hmac_key" {
