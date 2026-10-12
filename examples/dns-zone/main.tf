@@ -5,8 +5,6 @@ module "dns_zone" {
   dns_name    = "example.com."
   description = "Public zone for example.com"
 
-  deletion_policy = "PREVENT"
-
   iam = [
     {
       role    = "roles/dns.admin"
@@ -28,9 +26,9 @@ module "dns_zone" {
       rrdatas = ["example.com."]
     },
     {
-      name  = "@"
-      type  = "MX"
-      ttl   = 3600
+      name = "@"
+      type = "MX"
+      ttl  = 3600
       rrdatas = [
         "1 aspmx.l.google.com.",
         "5 alt1.aspmx.l.google.com.",

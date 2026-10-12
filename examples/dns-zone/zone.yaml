@@ -5,7 +5,7 @@ metadata:
 spec:
   dnsName: example.com.
   description: Public zone for example.com
-  deletionPolicy: PREVENT
+  deletionPolicy: Orphan
   iam:
   - role: roles/dns.admin
     members:

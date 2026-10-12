@@ -3,7 +3,6 @@ kind: Composition
 metadata:
   name: dnszones.gcp.kubed.io
 spec:
-  writeConnectionSecretsToNamespace: crossplane
   compositeTypeRef:
     apiVersion: gcp.kubed.io/v1alpha1
     kind: DnsZone
@@ -33,9 +32,6 @@ spec:
               module: github.com/kubed-io/terraform-gcp-components//modules/dns-zone?ref=main
               # filled out by the patch-and-transform function in the composition
               varmap: {}
-            writeConnectionSecretToRef:
-              namespace: crossplane
-              name: gcp-dns-zone
         patches:
 
         # workspace name
@@ -47,6 +43,12 @@ spec:
             string:
               type: Format
               fmt: "%s.dnszones.gcp"
+
+        # Orphan leaves the zone in GCP when the DnsZone is deleted — a recreated zone can get
+        # new name servers, and the registrar would have to be pointed at them again
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.deletionPolicy
+          toFieldPath: spec.deletionPolicy
 
         # scalars — individually patched, camelCase fromFieldPath → snake_case varmap key
         - type: FromCompositeFieldPath
@@ -65,8 +67,8 @@ spec:
           fromFieldPath: spec.forceDestroy
           toFieldPath: spec.forProvider.varmap.force_destroy
         - type: FromCompositeFieldPath
-          fromFieldPath: spec.deletionPolicy
-          toFieldPath: spec.forProvider.varmap.deletion_policy
+          fromFieldPath: spec.ownerId
+          toFieldPath: spec.forProvider.varmap.owner_id
 
         # objects/arrays — passed as a whole; internal keys are already snake_case in the definition
         - type: FromCompositeFieldPath
