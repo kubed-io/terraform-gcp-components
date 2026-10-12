@@ -8,9 +8,9 @@ Manages a Google Cloud DNS managed zone (`google_dns_managed_zone`) with IAM bin
 module "dns_zone" {
   source = "github.com/kubed-io/terraform-gcp-components//modules/dns-zone?ref=main"
 
-  name        = "kellydomain"
-  dns_name    = "kellydomain.com."
-  description = "Public zone for kellydomain.com"
+  name        = "example"
+  dns_name    = "example.com."
+  description = "Public zone for example.com"
   labels      = { env = "homelab" }
 
   records = [
@@ -24,7 +24,7 @@ module "dns_zone" {
       name    = "www"
       type    = "CNAME"
       ttl     = 300
-      rrdatas = ["kellydomain.com."]
+      rrdatas = ["example.com."]
     },
     {
       name    = "@"
@@ -86,8 +86,8 @@ module "dns_zone" {
 module "dns_zone" {
   source = "github.com/kubed-io/terraform-gcp-components//modules/dns-zone?ref=main"
 
-  name     = "kellydomain"
-  dns_name = "kellydomain.com."
+  name     = "example"
+  dns_name = "example.com."
 
   records = [
     {
@@ -116,12 +116,12 @@ module "dns_zone" {
 | `description` | string | `"Managed by Terraform"` | Free-text description |
 | `visibility` | string | `"public"` | `public` or `private` |
 | `force_destroy` | bool | `false` | Delete all records in the zone when destroying |
-| `deletion_policy` | string | `"DELETE"` | `DELETE`, `ABANDON`, or `PREVENT` |
 | `dnssec_config` | object | `null` | DNSSEC config — `state`, `non_existence`, `default_key_specs` |
 | `private_visibility_config` | object | `null` | VPC networks that can see this zone |
 | `cloud_logging_config` | object | `null` | Cloud DNS query logging — `{ enabled = bool }` |
 | `iam` | list | `[]` | IAM bindings — `role`, `members`, optional `condition` |
 | `records` | list | `[]` | DNS record sets — see Records below |
+| `owner_id` | string | zone `name` | Owner written into each record's external-dns TXT registry marker |
 | `labels` | map(string) | `{}` | GCP labels |
 
 ### Records
@@ -135,9 +135,12 @@ Each entry in `records` supports:
 | `ttl` | number | `300` | Time-to-live in seconds |
 | `rrdatas` | list(string) | `[]` | Record data; mutually exclusive with `routing_policy` |
 | `routing_policy` | object | `null` | WRR, geo, or primary/backup routing |
-| `deletion_policy` | string | `"DELETE"` | `DELETE`, `ABANDON`, or `PREVENT` |
 
-`routing_policy` supports three mutually exclusive strategies: `wrr` (weighted round-robin), `geo` (geolocation), and `primary_backup` (failover).
+`routing_policy` supports three mutually exclusive strategies: `wrr` (weighted round-robin), `geo` (geolocation), and `primary_backup` (failover). `primary_backup` with external endpoints also needs `routing_policy.health_check`.
+
+Each name + type is one record set, keyed by both, so changing one entry touches only that record set. Record sets not listed are never changed, so the zone can be shared with another writer such as external-dns — as long as the two never declare the same name + type.
+
+Every record gets the TXT ownership marker external-dns writes for its own (`www` A → `a-www` TXT, `heritage=external-dns,external-dns/owner=<owner_id>,...`), so the zone records who owns what with or without external-dns, and an external-dns beside it sees these as owned by someone else. The apex and wildcards get no marker: the name would fall outside the zone. Either way neither side can take over the other's record: external-dns skips names it does not own, and creating a record set that already exists fails here instead of overwriting it.
 
 ---
 
@@ -161,9 +164,9 @@ This module is also available as a Crossplane composite resource via the `DnsZon
 apiVersion: gcp.kubed.io/v1alpha1
 kind: DnsZone
 metadata:
-  name: kellydomain
+  name: example
 spec:
-  dnsName: kellydomain.com.
+  dnsName: example.com.
   records:
   - name: "@"
     type: A

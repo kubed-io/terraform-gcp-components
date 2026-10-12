@@ -37,18 +37,20 @@ spec:
                 enum:
                 - public
                 - private
+              ownerId:
+                description: Owner written into each record's external-dns TXT registry marker. Defaults to the zone name. Must differ from any external-dns --txt-owner-id sharing the zone
+                type: string
               forceDestroy:
                 description: Delete all records in the zone when destroying
                 type: boolean
                 default: false
               deletionPolicy:
-                description: Controls whether Terraform can destroy the zone — DELETE, ABANDON, or PREVENT
+                description: What happens to the zone in GCP when this DnsZone is deleted — Delete destroys it, Orphan leaves it in place
                 type: string
-                default: DELETE
+                default: Delete
                 enum:
-                - DELETE
-                - ABANDON
-                - PREVENT
+                - Delete
+                - Orphan
 
               # --- passed as whole objects; internal keys must be snake_case to match TF ---
 
@@ -153,7 +155,7 @@ spec:
                           type: string
 
               records:
-                description: DNS record sets managed within this zone
+                description: DNS record sets managed within this zone, one per name + type. Records not listed here are left alone
                 type: array
                 items:
                   type: object
@@ -176,18 +178,13 @@ spec:
                       type: array
                       items:
                         type: string
-                    deletion_policy:
-                      description: Controls whether Terraform can destroy this record set — DELETE, ABANDON, or PREVENT
-                      type: string
-                      default: DELETE
-                      enum:
-                      - DELETE
-                      - ABANDON
-                      - PREVENT
                     routing_policy:
                       description: Traffic routing policy — mutually exclusive with rrdatas
                       type: object
                       properties:
+                        health_check:
+                          description: Health check ID — required when primary_backup uses external_endpoints
+                          type: string
                         wrr:
                           description: Weighted round-robin routing targets
                           type: array
@@ -235,6 +232,8 @@ spec:
                             primary:
                               description: Primary targets to health check
                               type: object
+                              required:
+                              - external_endpoints
                               properties:
                                 external_endpoints:
                                   description: External IP endpoints to use as primary targets
