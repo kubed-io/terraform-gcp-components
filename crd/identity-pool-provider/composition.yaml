@@ -32,7 +32,7 @@ spec:
               source: Remote
               # the module is pulled once per ?ref, not on every reconcile
               remotePullPolicy: IfNotPresent
-              module: github.com/kubed-io/terraform-gcp-components//modules/identity-pool-provider?ref=main
+              module: github.com/kubed-io/terraform-gcp-components//modules/identity-pool-provider?ref=v0.0.2
               # filled out by the patch-and-transform function below
               varmap: {}
             writeConnectionSecretToRef:

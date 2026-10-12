@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-10-12
+
 ### Added
 
 - `service-account` module: a GCP service account with a JSON key, project and SA-level IAM bindings, and an optional HMAC key.
